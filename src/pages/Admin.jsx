@@ -10,6 +10,7 @@ const supabase = createClient(
 const BUCKET_NAME = 'menu-images';
 const CATEGORIES  = ['Coffee', 'Pastry', 'Dessert'];
 const CAT_ICONS   = { Coffee: '☕', Pastry: '🥐', Dessert: '🍮' };
+const PACK_CATS = ['Petit Déj', 'Lunch', 'Dinner', 'Other'];
 let toastTimer;
 
 const Admin = () => {
@@ -38,6 +39,7 @@ const Admin = () => {
   const [packImage,     setPackImage]     = useState(null);
   const [packPreview,   setPackPreview]   = useState(null);
   const [packQty,       setPackQty]       = useState({}); // { itemId: qty }
+  const [packCat,       setPackCat]       = useState('Other');
   const [loadingPack,   setLoadingPack]   = useState(false);
   const [packs,         setPacks]         = useState([]);
   const [packSearch,    setPackSearch]    = useState('');
@@ -185,11 +187,13 @@ const Admin = () => {
     setPackName(pack.name); setPackDesc(pack.description || '');
     setPackPrice(pack.price); setPackPreview(pack.image_url);
     setPackQty(pack.item_quantities || {}); setPackImage(null);
+    setPackCat(pack.pack_category || 'Other');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   const cancelEditPack = () => {
     setEditingPack(null); setPackName(''); setPackDesc(''); setPackPrice('');
     setPackImage(null); setPackPreview(null); setPackQty({});
+    setPackCat('Other');
   };
 
   const handleSubmitPack = async (e) => {
@@ -210,6 +214,7 @@ const Admin = () => {
         name: packName, description: packDesc,
         price: parseFloat(packPrice), image_url,
         item_quantities: packQty, item_ids, available,
+        pack_category: packCat,
       };
 
       if (editingPack) {
@@ -411,6 +416,19 @@ const Admin = () => {
               <div className="field">
                 <label className="field-label">Pack Price (DT)</label>
                 <input type="number" step="0.001" placeholder="0.000" value={packPrice} onChange={e => setPackPrice(e.target.value)} />
+              </div>
+
+              <div className="field">
+                <label className="field-label">Pack Category</label>
+                <div className="category-tags">
+                  {PACK_CATS.map(c => (
+                    <button key={c} type="button"
+                      className={`cat-tag${packCat === c ? ' active-tag' : ''}`}
+                      onClick={() => setPackCat(c)}>
+                      {c}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="field">
