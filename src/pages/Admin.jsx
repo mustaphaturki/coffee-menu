@@ -8,8 +8,8 @@ const supabase = createClient(
 );
 
 const BUCKET_NAME = 'menu-images';
-const CATEGORIES  = ['Coffee', 'Pastry', 'Dessert'];
-const CAT_ICONS   = { Coffee: '☕', Pastry: '🥐', Dessert: '🍮' };
+const CATEGORIES  = ['Coffee', 'Drinks', 'Pastry', 'Dessert', 'Sweets', 'Chicha'];
+const CAT_ICONS   = { Coffee: '☕', Drinks: '🧃', Pastry: '🥐', Dessert: '🍮', Sweets: '🍬', Chicha: '💨' };
 const PACK_CATS = ['Petit Déj', 'Lunch', 'Dinner', 'Other'];
 let toastTimer;
 

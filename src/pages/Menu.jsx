@@ -6,9 +6,9 @@ const supabase = createClient(
   'sb_publishable_4AchmnqFGUX3epT2torLPw_u-ij7hkP'
 );
 
-const ITEM_CATS  = ['Coffee', 'Pastry', 'Dessert'];
+const ITEM_CATS  = ['Coffee', 'Drinks', 'Pastry', 'Dessert', 'Sweets', 'Chicha'];
 const PACK_CATS  = ['Petit Déj', 'Lunch', 'Dinner', 'Other'];
-const CAT_ICONS  = { Coffee: '☕', Pastry: '🥐', Dessert: '🍮', 'Petit Déj': '🌅', Lunch: '🌞', Dinner: '🌙', Other: '🎁' };
+const CAT_ICONS  = { Coffee: '☕', Drinks: '🧃', Pastry: '🥐', Dessert: '🍮', Sweets: '🍬', Chicha: '💨', 'Petit Déj': '🌅', Lunch: '🌞', Dinner: '🌙', Other: '🎁' };
 
 /* ─── inject styles once ─────────────────────────────────── */
 let _injected = false;
