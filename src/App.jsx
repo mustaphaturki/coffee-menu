@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Menu from './pages/Menu';
-import Admin from './pages/Admin';
+import Admin from './pages/AdminDashboard';
 import Login from './pages/Login';
 import ProtectedRoute from './components/ProtectedRoute';
 

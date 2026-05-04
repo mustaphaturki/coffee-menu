@@ -1,14 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import React, { useState, useEffect, useMemo } from 'react';
+import { supabase } from '../supabaseClient';
 
-const supabase = createClient(
-  'https://cngjgwtnaoecuwgakrpj.supabase.co',
-  'sb_publishable_4AchmnqFGUX3epT2torLPw_u-ij7hkP'
-);
+const CATEGORY_TABLE = 'categories';
+const CATEGORY_STORAGE_KEY = 'bb-admin-categories';
 
-const ITEM_CATS  = ['Coffee', 'Drinks', 'Pastry', 'Dessert', 'Sweets', 'Chicha'];
-const PACK_CATS  = ['Petit Déj', 'Lunch', 'Dinner', 'Other'];
-const CAT_ICONS  = { Coffee: '☕', Drinks: '🧃', Pastry: '🥐', Dessert: '🍮', Sweets: '🍬', Chicha: '💨', 'Petit Déj': '🌅', Lunch: '🌞', Dinner: '🌙', Other: '🎁' };
+const DEFAULT_ITEM_CATEGORIES  = ['Coffee', 'Drinks', 'Pastry', 'Dessert', 'Sweets', 'Chicha'];
+const DEFAULT_PACK_CATEGORIES  = ['Petit Déj', 'Lunch', 'Dinner', 'Other'];
+
+const DEFAULT_CATEGORY_ICONS  = { Coffee: '☕', Drinks: '🧃', Pastry: '🥐', Dessert: '🍮', Sweets: '🍬', Chicha: '💨', 'Petit Déj': '🌅', Lunch: '🌞', Dinner: '🌙', Other: '🎁' };
 
 /* ─── inject styles once ─────────────────────────────────── */
 let _injected = false;
@@ -30,6 +29,7 @@ const Menu = () => {
   const [packs,   setPacks]   = useState([]);
   const [itemCat,  setItemCat]  = useState('Coffee');
   const [packCat,  setPackCat]  = useState('Petit Déj');
+  const [selectedView, setSelectedView] = useState('items');
   const [loading,  setLoading]  = useState(true);
   const [animKey,  setAnimKey]  = useState(0);
 
@@ -44,8 +44,8 @@ const Menu = () => {
     (async () => {
       setLoading(true);
       const [{ data: m }, { data: p }] = await Promise.all([
-        supabase.from('menu').select('*').order('created_at', { ascending: false }),
-        supabase.from('packs').select('*').order('created_at', { ascending: false }),
+        supabase.from('menu').select('id, name, price, category, image_url, available, created_at').order('created_at', { ascending: false }),
+        supabase.from('packs').select('id, name, description, price, image_url, item_quantities, item_ids, available, pack_category, created_at').order('created_at', { ascending: false }),
       ]);
       setItems(m || []);
       setPacks(p || []);
@@ -53,14 +53,88 @@ const Menu = () => {
     })();
   }, []);
 
+  // Categories: load from DB with localStorage fallback
+  const [categories, setCategories] = useState([]);
+  const [categoriesReady, setCategoriesReady] = useState(true);
+
+  const readLocalCategories = () => {
+    try {
+      const raw = localStorage.getItem(CATEGORY_STORAGE_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const writeLocalCategories = (entries) => {
+    try { localStorage.setItem(CATEGORY_STORAGE_KEY, JSON.stringify(entries)); } catch {}
+  };
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data, error } = await supabase.from(CATEGORY_TABLE).select('id, name, kind, icon, is_active, sort_order');
+        if (error) throw error;
+        setCategories((data || []).map((c) => ({
+          id: c.id,
+          name: c.name,
+          kind: c.kind || 'item',
+          icon: c.icon || DEFAULT_CATEGORY_ICONS[c.name] || '•',
+          is_active: c.is_active !== false,
+          sort_order: c.sort_order ?? 0,
+        })));
+        setCategoriesReady(true);
+      } catch (err) {
+        console.error('categories load', err);
+        const local = readLocalCategories();
+        if (local.length > 0) {
+          setCategories(local.map((c) => ({ ...c })));
+        } else {
+          const starter = [
+            ...DEFAULT_ITEM_CATEGORIES.map((n, i) => ({ id: `starter-item-${i}`, name: n, kind: 'item', icon: DEFAULT_CATEGORY_ICONS[n], is_active: true, sort_order: i })),
+            ...DEFAULT_PACK_CATEGORIES.map((n, i) => ({ id: `starter-pack-${i}`, name: n, kind: 'pack', icon: DEFAULT_CATEGORY_ICONS[n], is_active: true, sort_order: i })),
+          ];
+          setCategories(starter);
+          writeLocalCategories(starter);
+        }
+        setCategoriesReady(false);
+      }
+    })();
+  }, []);
+
   const switchItemCat = (c) => { setItemCat(c); setAnimKey(k => k + 1); };
   const switchPackCat = (c) => { setPackCat(c); setAnimKey(k => k + 1); };
+
+  // When user selects an item category, show items; when selects a pack category, show packs
+  const handleSelectItemCat = (c) => { setItemCat(c); setSelectedView('items'); setAnimKey(k => k + 1); };
+  const handleSelectPackCat = (c) => { setPackCat(c); setSelectedView('packs'); setAnimKey(k => k + 1); };
+
+  const itemCategories = useMemo(() => (
+    categories.filter((e) => e.kind === 'item' && e.is_active !== false).sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.name.localeCompare(b.name))
+  ), [categories]);
+
+  const packCategories = useMemo(() => (
+    categories.filter((e) => e.kind === 'pack' && e.is_active !== false).sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.name.localeCompare(b.name))
+  ), [categories]);
+
+  useEffect(() => {
+    if (itemCategories.length > 0 && !itemCategories.some(c => c.name === itemCat)) setItemCat(itemCategories[0].name);
+    if (packCategories.length > 0 && !packCategories.some(c => c.name === packCat)) setPackCat(packCategories[0].name);
+  }, [itemCategories, packCategories]);
+
+  const CAT_ICONS = useMemo(() => {
+    const map = { ...DEFAULT_CATEGORY_ICONS };
+    categories.forEach((c) => { map[c.name] = c.icon || map[c.name] || '•'; });
+    return map;
+  }, [categories]);
 
   const visItems = items.filter(i => i.category === itemCat);
   const visPacks = packs.filter(p => (p.pack_category || 'Other') === packCat);
 
-  const itemCounts = Object.fromEntries(ITEM_CATS.map(c => [c, items.filter(i => i.category === c).length]));
-  const packCounts = Object.fromEntries(PACK_CATS.map(c => [c, packs.filter(p => (p.pack_category || 'Other') === c).length]));
+  const itemCounts = Object.fromEntries((itemCategories.length > 0 ? itemCategories.map(c => c.name) : DEFAULT_ITEM_CATEGORIES).map(c => [c, items.filter(i => i.category === c).length]));
+  const packCounts = Object.fromEntries((packCategories.length > 0 ? packCategories.map(c => c.name) : DEFAULT_PACK_CATEGORIES).map(c => [c, packs.filter(p => (p.pack_category || 'Other') === c).length]));
 
   return (
     <div className="mn-root" data-theme={theme}>
@@ -95,8 +169,8 @@ const Menu = () => {
       {/* ── DOUBLE STRIP ─────────────────────────── */}
       <div className="mn-strip-wrap">
         <div className="mn-strip-row mn-strip-divider">
-          {ITEM_CATS.map(c => (
-            <button key={c} className={`mn-pill${itemCat === c ? ' mn-pill-on' : ''}`} onClick={() => switchItemCat(c)}>
+          {(itemCategories.length > 0 ? itemCategories.map(c => c.name) : DEFAULT_ITEM_CATEGORIES).map(c => (
+            <button key={c} className={`mn-pill${itemCat === c ? ' mn-pill-on' : ''}`} onClick={() => handleSelectItemCat(c)}>
               <span className="mn-pill-icon">{CAT_ICONS[c]}</span>
               <span className="mn-pill-label">{c}</span>
               {itemCounts[c] > 0 && <span className="mn-pill-badge">{itemCounts[c]}</span>}
@@ -104,8 +178,8 @@ const Menu = () => {
           ))}
         </div>
         <div className="mn-strip-row">
-          {PACK_CATS.map(c => (
-            <button key={c} className={`mn-pill mn-pill-sm${packCat === c ? ' mn-pill-pack-on' : ''}`} onClick={() => switchPackCat(c)}>
+          {(packCategories.length > 0 ? packCategories.map(c => c.name) : DEFAULT_PACK_CATEGORIES).map(c => (
+            <button key={c} className={`mn-pill mn-pill-sm${packCat === c ? ' mn-pill-pack-on' : ''}`} onClick={() => handleSelectPackCat(c)}>
               <span className="mn-pill-icon">{CAT_ICONS[c]}</span>
               <span className="mn-pill-label">{c}</span>
               {packCounts[c] > 0 && <span className="mn-pill-badge">{packCounts[c]}</span>}
@@ -119,24 +193,26 @@ const Menu = () => {
           <SkeletonGrid />
         ) : (
           <>
-            {/* Items */}
-            {visItems.length === 0
-              ? <EmptyState cat={itemCat} />
-              : <div className="mn-grid">
-                  {visItems.map((item, i) => <ItemCard key={item.id} item={item} idx={i} />)}
+            {/* Items or Packs view */}
+            {selectedView === 'items' ? (
+              visItems.length === 0
+                ? <EmptyState cat={itemCat} icons={CAT_ICONS} />
+                : <div className="mn-grid">
+                    {visItems.map((item, i) => <ItemCard key={item.id} item={item} idx={i} icons={CAT_ICONS} />)}
+                  </div>
+            ) : (
+              <>
+                <div className="mn-section-label" style={{ marginTop: 24 }}>
+                  <span>{CAT_ICONS[packCat]}</span> {packCat} Packs
                 </div>
-            }
-
-            {/* Packs */}
-            <div className="mn-section-label" style={{ marginTop: 24 }}>
-              <span>{CAT_ICONS[packCat]}</span> {packCat} Packs
-            </div>
-            {visPacks.length === 0
-              ? <EmptyState cat={packCat} />
-              : <div className="mn-packs">
-                  {visPacks.map((pack, i) => <PackCard key={pack.id} pack={pack} items={items} idx={i} />)}
-                </div>
-            }
+                {visPacks.length === 0
+                  ? <EmptyState cat={packCat} icons={CAT_ICONS} />
+                  : <div className="mn-packs">
+                      {visPacks.map((pack, i) => <PackCard key={pack.id} pack={pack} items={items} idx={i} icons={CAT_ICONS} />)}
+                    </div>
+                }
+              </>
+            )}
           </>
         )}
       </main>
@@ -151,7 +227,7 @@ const Menu = () => {
 };
 
 /* ─── ItemCard ───────────────────────────────────────────── */
-const ItemCard = ({ item, idx }) => {
+const ItemCard = ({ item, idx, icons }) => {
   const avail = item.available !== false;
   return (
     <div
@@ -166,7 +242,7 @@ const ItemCard = ({ item, idx }) => {
           loading="lazy"
         />
         <span className="mn-card-cat">
-          {CAT_ICONS[item.category]}
+          {icons[item.category]}
         </span>
         {!avail && (
           <div className="mn-card-veil">
@@ -186,7 +262,7 @@ const ItemCard = ({ item, idx }) => {
 };
 
 /* ─── PackCard ───────────────────────────────────────────── */
-const PackCard = ({ pack, items, idx }) => {
+const PackCard = ({ pack, items, idx, icons }) => {
   const avail  = pack.available !== false;
   const qty    = pack.item_quantities || {};
   const chips  = Object.entries(qty)
@@ -222,8 +298,8 @@ const PackCard = ({ pack, items, idx }) => {
           <div className="mn-pack-chips">
             {chips.map(({ item, q }) => (
               <span key={item.id} className="mn-chip">
-                {CAT_ICONS[item.category]} {item.name}{q > 1 ? ` ×${q}` : ''}
-              </span>
+                  {icons[item.category]} {item.name}{q > 1 ? ` ×${q}` : ''}
+                </span>
             ))}
           </div>
         )}
@@ -252,9 +328,9 @@ const SkeletonGrid = () => (
 );
 
 /* ─── Empty ──────────────────────────────────────────────── */
-const EmptyState = ({ cat }) => (
+const EmptyState = ({ cat, icons }) => (
   <div className="mn-empty">
-    <span className="mn-empty-icon">{CAT_ICONS[cat] || '☕'}</span>
+    <span className="mn-empty-icon">{(icons && icons[cat]) || '☕'}</span>
     <p>Nothing here yet</p>
   </div>
 );
