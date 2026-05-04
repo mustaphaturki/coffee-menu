@@ -154,6 +154,14 @@ const AdminDashboard = () => {
   const [packAvailabilityFilter, setPackAvailabilityFilter] = useState('all');
   const [packVisibleCount, setPackVisibleCount] = useState(PACK_BATCH_SIZE);
 
+  const [customMenuUrl, setCustomMenuUrl] = useState(() => {
+    try {
+      return localStorage.getItem('bb-custom-menu-url') || '';
+    } catch {
+      return '';
+    }
+  });
+
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('bb-theme', theme);
@@ -249,9 +257,10 @@ const AdminDashboard = () => {
   };
 
   const menuUrl = useMemo(() => {
+    if (customMenuUrl) return customMenuUrl;
     if (typeof window === 'undefined') return '/';
     return `${window.location.origin}/`;
-  }, []);
+  }, [customMenuUrl]);
 
   const handlePrintQr = () => {
     window.print();
@@ -765,6 +774,25 @@ const AdminDashboard = () => {
 
           {workspaceView === 'qr' && (
             <section className="qr-panel qr-print-only">
+              <div className="qr-panel-copy">
+                <h3 className="panel-title">Menu URL</h3>
+                <div className="qr-url-input-box">
+                  <input
+                    type="url"
+                    placeholder="https://animated-treacle-08d991.netlify.app/"
+                    value={customMenuUrl}
+                    onChange={(e) => {
+                      const newUrl = e.target.value;
+                      setCustomMenuUrl(newUrl);
+                      try {
+                        localStorage.setItem('bb-custom-menu-url', newUrl);
+                      } catch {}
+                    }}
+                    className="field"
+                  />
+                </div>
+              </div>
+
               <div className="qr-panel-copy">
                 <p className="panel-kicker">Public Menu</p>
                 <h2 className="panel-title">QR code for the menu app</h2>
