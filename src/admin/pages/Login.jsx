@@ -1,12 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createClient } from '@supabase/supabase-js';
-import '../App.css';
+import { supabase } from '../../shared/lib/supabase';
+import '../../styles/App.css';
 
-const supabase = createClient(
-  'https://cngjgwtnaoecuwgakrpj.supabase.co',
-  'sb_publishable_4AchmnqFGUX3epT2torLPw_u-ij7hkP'
-);
+
 
 // username → supabase email mapping
 const USER_MAP = {

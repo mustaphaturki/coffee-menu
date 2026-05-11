@@ -1,31 +1,24 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Menu from './pages/Menu';
-import Admin from './pages/AdminDashboard';
-import Login from './pages/Login';
-import ProtectedRoute from './components/ProtectedRoute';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import Menu from './menu/pages/Menu'
+import AdminDashboard from './admin/pages/AdminDashboard'
+import Login from './admin/pages/Login'
+import ProtectedRoute from './shared/components/ProtectedRoute'
 
 function App() {
   return (
     <Router>
       <Routes>
-        {/* Customer menu */}
         <Route path="/" element={<Menu />} />
-
-        {/* Login */}
         <Route path="/login" element={<Login />} />
-
-        {/* Protected admin */}
         <Route path="/admin" element={
           <ProtectedRoute>
-            <Admin />
+            <AdminDashboard />
           </ProtectedRoute>
         } />
-
-        {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
-  );
+  )
 }
 
-export default App;
+export default App
