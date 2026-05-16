@@ -1,22 +1,14 @@
-import { useState, useMemo } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 
 const QRPanel = ({ showToast }) => {
-  const [customUrl, setCustomUrl] = useState(() => {
-    try { return localStorage.getItem('bb-custom-menu-url') || '' } catch { return '' }
-  })
-
-  const menuUrl = useMemo(() => {
-    if (customUrl) return customUrl
-    return typeof window !== 'undefined' ? `${window.location.origin}/` : '/'
-  }, [customUrl])
+  const menuUrl = 'https://animated-treacle-08d991.netlify.app/'
 
   return (
-    <div style={{
+    <div className="qr-panel" style={{
       display: 'flex', justifyContent: 'center',
       padding: '32px 24px',
     }}>
-      <div style={{
+      <div className="qr-panel-card" style={{
         width: '100%', maxWidth: 780,
         background: 'var(--card)',
         border: '1px solid var(--card-border)',
@@ -26,7 +18,7 @@ const QRPanel = ({ showToast }) => {
       }}>
 
         {/* ── LEFT ── */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div className="qr-info" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div>
             <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 28, color: 'var(--espresso)', marginBottom: 6 }}>
               Menu QR Code
@@ -36,27 +28,7 @@ const QRPanel = ({ showToast }) => {
             </p>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <label className="field-label">Menu URL</label>
-            <input
-              type="url"
-              placeholder="https://your-menu-url.com"
-              value={customUrl}
-              onChange={e => {
-                setCustomUrl(e.target.value)
-                try { localStorage.setItem('bb-custom-menu-url', e.target.value) } catch {}
-              }}
-              style={{
-                padding: '12px 16px',
-                border: '1px solid var(--input-border)',
-                borderRadius: 12, fontSize: 14,
-                background: 'var(--input-bg)', color: 'var(--ink)',
-                fontFamily: 'Sora, sans-serif', outline: 'none',
-              }}
-            />
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div className="qr-actions" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <button type="button" className="btn-add"
               onClick={() => window.open(menuUrl, '_blank', 'noopener,noreferrer')}>
               🔗 Open Menu
@@ -78,7 +50,7 @@ const QRPanel = ({ showToast }) => {
         </div>
 
         {/* ── RIGHT: QR Card ── */}
-        <div style={{
+        <div className="qr-code-card" style={{
           flexShrink: 0,
           background: 'var(--input-bg)',
           border: '1px solid var(--card-border)',
@@ -87,10 +59,6 @@ const QRPanel = ({ showToast }) => {
           alignItems: 'center', gap: 10,
           minWidth: 260,
         }}>
-          <img src="/logo.png" alt="Eryx Coffee" style={{
-            width: 52, height: 52, borderRadius: 14,
-            objectFit: 'contain',
-          }} />
           <p style={{
             fontFamily: 'Fraunces, serif', fontSize: 18,
             color: 'var(--espresso)', fontWeight: 700,
@@ -98,9 +66,6 @@ const QRPanel = ({ showToast }) => {
           <div style={{ color: 'var(--espresso)' }}>
             <QRCodeSVG value={menuUrl} size={180} bgColor="transparent" fgColor="currentColor" level="M" includeMargin />
           </div>
-          <p style={{ fontSize: 10, color: 'var(--muted)', wordBreak: 'break-all', textAlign: 'center' }}>
-            {menuUrl}
-          </p>
         </div>
 
       </div>

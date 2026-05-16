@@ -110,7 +110,6 @@ const AdminDashboard = () => {
         {/* ── Header ── */}
 <header className="admin-header">
   <div className="logo-area">
-    <img src="/logo.png" alt="Eryx Coffee" className="logo-img" />
     <h1 className="admin-logo">Eryx Coffee</h1>
   </div>
   <div className="header-right">
